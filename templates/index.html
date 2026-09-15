@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JobFit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="sheet">
+        <header>
+            <div class="title-row">
+            <span class="mark" aria-hidden="true">📄</span>
+            <h1>JobFit</h1>
+            </div>
+            <p class="subhead">Get AI feedback and a resume tailored to the job you want.</p>
+        </header>
+
+        <form id="fullForm">
+            <div class="field">
+                <div class="upload-box" id="uploadBoxFull">
+                    <input type="file" id="resumeFileFull" name="resume" accept=".pdf" hidden>
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="clip-icon">
+                        <path d="M13.5 6.5L7.5 12.5C6.4 13.6 6.4 15.4 7.5 16.5C8.6 17.6 10.4 17.6 11.5 16.5L17 11C18.7 9.3 18.7 6.7 17 5C15.3 3.3 12.7 3.3 11 5L5.5 10.5C3.3 12.7 3.3 16.3 5.5 18.5C7.7 20.7 11.3 20.7 13.5 18.5" stroke="#5B564C" stroke-width="1.4" stroke-linecap="round"/>
+                    </svg>
+                    <p id="uploadTextFull">Attach your resume — PDF only</p>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="jobDescription">The job posting</label>
+                <textarea id="jobDescription" name="job_description" placeholder="Paste the full job description here." rows="8"></textarea>
+            </div>
+
+            <div class="field">
+                <label for="additionalInfo">Notes for the rewrite <span>optional</span></label>
+                <textarea id="additionalInfo" name="additional_info" placeholder="Anything you want added, removed, or emphasized — a new project, more focus on leadership, cut the volunteer section." rows="4"></textarea>
+            </div>
+
+            <button type="submit" id="analyzeBtn">Analyze and tailor my resume</button>
+        </form>
+
+        <div id="loading" class="hidden">
+            <div class="pulse-mark">
+                <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+                    <path d="M5 14.5L11 20.5L23 6.5" stroke="#A32B1F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <p id="loadingText">Reading your resume against the posting…</p>
+        </div>
+
+        <div id="results" class="hidden">
+            <h2>Feedback</h2>
+            <div id="feedbackBox" class="feedback-box"></div>
+
+            <h2>Updated resume — preview</h2>
+            <div id="previewBox"></div>
+
+            <div class="field revise-field">
+                <label for="revisionNotes">Want something changed?</label>
+                <textarea id="revisionNotes" placeholder="e.g. 'Make the summary shorter' or 'Add my duck classifier project under Projects'" rows="3"></textarea>
+                <button type="button" id="reviseBtn" class="secondary-btn">Update preview</button>
+            </div>
+
+            <a id="downloadBtn" href="/download" download>
+                <button type="button">Download updated resume (.docx)</button>
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const fullForm = document.getElementById("fullForm");
+        const loading = document.getElementById("loading");
+        const results = document.getElementById("results");
+        const feedbackBox = document.getElementById("feedbackBox");
+        const previewBox = document.getElementById("previewBox");
+
+        const uploadBoxFull = document.getElementById("uploadBoxFull");
+        const resumeFileFull = document.getElementById("resumeFileFull");
+        const uploadTextFull = document.getElementById("uploadTextFull");
+
+        uploadBoxFull.addEventListener("click", () => resumeFileFull.click());
+        resumeFileFull.addEventListener("change", () => {
+            if (resumeFileFull.files.length > 0) {
+                uploadTextFull.textContent = resumeFileFull.files[0].name;
+                uploadBoxFull.classList.add("filled");
+            }
+        });
+
+        fullForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            if (!resumeFileFull.files.length) {
+                alert("Attach your resume first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("resume", resumeFileFull.files[0]);
+            formData.append("job_description", document.getElementById("jobDescription").value);
+            formData.append("additional_info", document.getElementById("additionalInfo").value);
+
+            fullForm.classList.add("hidden");
+            document.getElementById("loadingText").textContent = "Reading your resume against the posting…";
+            loading.classList.remove("hidden");
+
+            try {
+                const response = await fetch("/generate", { method: "POST", body: formData });
+                const data = await response.json();
+                loading.classList.add("hidden");
+
+                if (data.error) {
+                    alert(data.error);
+                    fullForm.classList.remove("hidden");
+                    return;
+                }
+
+                feedbackBox.innerHTML = data.feedback;
+                previewBox.innerHTML = data.preview;
+                results.classList.remove("hidden");
+            } catch (err) {
+                alert("Something went wrong. Please try again.");
+                loading.classList.add("hidden");
+                fullForm.classList.remove("hidden");
+            }
+        });
+
+        document.getElementById("reviseBtn").addEventListener("click", async () => {
+            const notes = document.getElementById("revisionNotes").value;
+            if (!notes.trim()) {
+                alert("Tell us what to change first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("revision_notes", notes);
+
+            results.classList.add("hidden");
+            document.getElementById("loadingText").textContent = "Updating your resume…";
+            loading.classList.remove("hidden");
+
+            try {
+                const response = await fetch("/revise", { method: "POST", body: formData });
+                const data = await response.json();
+                loading.classList.add("hidden");
+
+                if (data.error) {
+                    alert(data.error);
+                    results.classList.remove("hidden");
+                    return;
+                }
+
+                previewBox.innerHTML = data.preview;
+                document.getElementById("revisionNotes").value = "";
+                results.classList.remove("hidden");
+            } catch (err) {
+                alert("Something went wrong. Please try again.");
+                results.classList.remove("hidden");
+            }
+        });
+    </script>
+</body>
+</html>
