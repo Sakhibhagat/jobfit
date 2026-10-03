@@ -158,7 +158,7 @@ def build_docx(tailored_text):
 
 
 
-st.markdown('<p class="title-text">📄 Resume Analyzer</p>', unsafe_allow_html=True)
+st.markdown('<p class="title-text"> Resume Analyzer</p>', unsafe_allow_html=True)
 st.markdown('<p class="subtitle-text">Get AI feedback and a tailored resume for the job you want</p>', unsafe_allow_html=True)
 
 uploaded_file = st.file_uploader("Upload your resume (PDF)", type=["pdf"])
@@ -176,10 +176,10 @@ if uploaded_file is not None and job_description.strip():
             tailored = get_tailored_resume(resume_text, job_description)
 
         st.markdown("---")
-        st.markdown("### ✨ Feedback")
+        st.markdown("###  Feedback")
         st.markdown(f'<div class="feedback-box">{feedback}</div>', unsafe_allow_html=True)
 
-        st.markdown("### 📝 Tailored Resume")
+        st.markdown("###  Tailored Resume")
         docx_buffer = build_docx(tailored)
         st.download_button(
             label="Download Tailored Resume (.docx)",
