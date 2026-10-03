@@ -3,6 +3,7 @@
 An AI-powered resume tailoring tool. Upload your resume as a PDF and a job description, and JobFit analyzes your fit for the role, then rewrites your resume to better match what the job is asking for — matching your original resume's font and color so the output doesn't look like a generic template.
 
 **Live demo:** https://jobfit-u1t9.onrender.com
+*(Hosted on a free tier — may take 30-60 seconds to load on first visit if inactive.)*
 
 ## How it works
 
